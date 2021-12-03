@@ -60,7 +60,7 @@ abstract class Codec {
       return true;
     }
 
-    final mantissa = float.mantissa.abs();
+    final mantissa = float.mantissaInteger.abs();
     int exponent = float.exponent + mantissaBitLength + exponentBias;
 
     if (mantissa.bitLength == 0) {
@@ -105,7 +105,7 @@ abstract class Codec {
 
     final sign = float.isNegative;
     float = float.abs();
-    if (float.mantissa == BigInt.zero) {
+    if (float.mantissaInteger.isZero) {
       return _encode(float.isNegative, Integer.zero, 0, e);
     }
 
@@ -128,7 +128,7 @@ abstract class Codec {
     }
 
     final subnormal = float.roundToExponent(0);
-    assert(subnormal.mantissa.bitLength <= mantissaBitLength);
+    assert(subnormal.mantissaInteger.bitLength <= mantissaBitLength);
     return _encode(sign, subnormal.mantissaInteger, 0, e);
   }
 

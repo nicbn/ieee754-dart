@@ -165,14 +165,14 @@ abstract class FloatParts {
   /// When building from a double or from bytes, this is already done,
   /// so it's redundant to call again.
   FloatParts minimize() {
-    BigInt mant = mantissa;
+    Integer mant = mantissaInteger;
     int exp = exponent;
-    while (mant.isEven && mant.bitLength != 0) {
+    while (mant.isEven && !mant.isZero) {
       mant >>= 1;
       exp += 1;
     }
 
-    return FloatParts.withBigMantissa(mant, exp, forceNegative: isNegative);
+    return _FloatParts(mant, exp, isNegative);
   }
 
   /// Returns the absolute value of this number.
@@ -182,7 +182,7 @@ abstract class FloatParts {
     } else if (isInfinite) {
       return FloatParts.infinity;
     } else {
-      return FloatParts.withBigMantissa(mantissa.abs(), exponent);
+      return _FloatParts(mantissaInteger.abs(), exponent);
     }
   }
 
@@ -193,11 +193,11 @@ abstract class FloatParts {
   ///
   /// No-op if the number is zero, inifinity or NaN.
   FloatParts roundToMantissa(int bits) {
-    if (isNaN || isInfinite || mantissa == BigInt.zero) {
+    if (isNaN || isInfinite || mantissaInteger.isZero) {
       return this;
     }
 
-    BigInt mant = mantissa.abs();
+    Integer mant = mantissaInteger.abs();
     int exp = exponent;
     if (mant.bitLength < bits) {
       exp -= bits - mant.bitLength;
@@ -209,7 +209,7 @@ abstract class FloatParts {
         final c = mant.isOdd;
         mant >>= 1;
         if (c) {
-          mant += BigInt.one;
+          mant += Integer.one;
         }
       }
     }
@@ -218,18 +218,18 @@ abstract class FloatParts {
       mant = -mant;
     }
 
-    return FloatParts.withBigMantissa(mant, exp);
+    return _FloatParts(mant, exp, isNegative);
   }
 
   /// Rounds (or extends) the number such that `exponent == val`.
   ///
   /// No-op if the number is zero, inifinity or NaN.
   FloatParts roundToExponent(int val) {
-    if (isNaN || isInfinite || mantissa == BigInt.zero) {
+    if (isNaN || isInfinite || mantissaInteger.isZero) {
       return this;
     }
 
-    BigInt mant = mantissa;
+    Integer mant = mantissaInteger.abs();
     if (exponent > val) {
       mant <<= exponent - val;
     } else if (exponent < val) {
@@ -237,11 +237,15 @@ abstract class FloatParts {
       final c = mant.isOdd;
       mant >>= 1;
       if (c) {
-        mant += BigInt.one;
+        mant += Integer.one;
       }
     }
 
-    return FloatParts.withBigMantissa(mant, val);
+    if (isNegative) {
+      mant = -mant;
+    }
+
+    return _FloatParts(mant, val, isNegative);
   }
 
   /// Transform the number into a double.

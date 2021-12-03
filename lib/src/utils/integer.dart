@@ -15,6 +15,8 @@ abstract class Integer {
 
   static final Integer zero = _IntInteger(0);
 
+  static final Integer one = _IntInteger(1);
+
   bool get isIntLossless;
 
   BigInt toBigInt();
@@ -27,7 +29,12 @@ abstract class Integer {
   Integer operator >>(int i);
   Integer operator |(Integer x);
   Integer operator -();
+  Integer operator +(Integer other);
 
+  int get bitLength;
+
+  bool get isEven;
+  bool get isOdd;
   bool get isZero;
 
   /// Same as (x | (1 << i))
@@ -36,7 +43,7 @@ abstract class Integer {
   Integer abs();
 }
 
-class _IntInteger with Integer {
+class _IntInteger implements Integer {
   _IntInteger(this._x);
 
   final int _x;
@@ -50,6 +57,12 @@ class _IntInteger with Integer {
 
   @override
   int toInt() => _x;
+
+  @override
+  bool get isEven => _x.isEven;
+
+  @override
+  bool get isOdd => _x.isOdd;
 
   @override
   bool get isZero => _x == 0;
@@ -88,6 +101,9 @@ class _IntInteger with Integer {
   }
 
   @override
+  Integer operator +(Integer other) => Integer(_bigInt + other.toBigInt());
+
+  @override
   Integer withBit(int i) {
     if (i < 52) {
       return Integer.from(_x | (1 << i));
@@ -95,6 +111,9 @@ class _IntInteger with Integer {
       return Integer(_bigInt | (BigInt.one << i));
     }
   }
+
+  @override
+  int get bitLength => _x.bitLength;
 
   @override
   Integer abs() => Integer(_bigInt.abs());
@@ -114,13 +133,19 @@ class _IntInteger with Integer {
   int get hashCode => _x.hashCode;
 }
 
-class _BigIntInteger with Integer {
+class _BigIntInteger implements Integer {
   _BigIntInteger(this._x);
 
   final BigInt _x;
 
   @override
   final bool isIntLossless = false;
+
+  @override
+  bool get isOdd => _x.isOdd;
+
+  @override
+  bool get isEven => _x.isEven;
 
   @override
   final bool isZero = false;
@@ -147,6 +172,12 @@ class _BigIntInteger with Integer {
   Integer operator |(Integer x) {
     return Integer(_x | x.toBigInt());
   }
+
+  @override
+  Integer operator +(Integer other) => Integer(_x + other.toBigInt());
+
+  @override
+  int get bitLength => _x.bitLength;
 
   @override
   Integer abs() => Integer(_x.abs());

@@ -91,8 +91,8 @@ void main() {
       expect(parts.toFloat16Bytes(), [0x7B, 0xFF]);
     });
 
-    test('toFloat16Bytes(2e-14)', () {
-      var parts = FloatParts(1, -14);
+    test('toFloat16Bytes(2 ** -24)', () {
+      var parts = FloatParts(1, -24);
       expect(parts.isFloat16Lossless, true);
       expect(parts.toFloat16Bytes(), [0x00, 0x01]);
     });

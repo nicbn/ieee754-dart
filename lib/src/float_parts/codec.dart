@@ -122,12 +122,8 @@ abstract class Codec {
           sign, normal.mantissaInteger.mask(mantissaBitLength), exponent, e);
     }
 
-    // Exponent is too small
-    if (exponent < 1) {
-      return _encode(sign, Integer.zero, 0, e);
-    }
-
-    final subnormal = float.roundToExponent(0);
+    final subnormal =
+        float.roundToExponent(-(exponentBias - 1 + mantissaBitLength));
     assert(subnormal.mantissaInteger.bitLength <= mantissaBitLength);
     return _encode(sign, subnormal.mantissaInteger, 0, e);
   }

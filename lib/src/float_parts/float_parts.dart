@@ -131,6 +131,7 @@ abstract class FloatParts {
   /// Representation for NaN.
   static const FloatParts nan = _Nan();
 
+  /// <nodoc>
   @internal
   Integer get mantissaInteger;
 

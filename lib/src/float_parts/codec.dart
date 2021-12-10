@@ -106,7 +106,7 @@ abstract class Codec {
     final sign = float.isNegative;
     float = float.abs();
     if (float.mantissaInteger.isZero) {
-      return _encode(float.isNegative, Integer.zero, 0, e);
+      return _encode(sign, Integer.zero, 0, e);
     }
 
     // Try to encode in normalized form

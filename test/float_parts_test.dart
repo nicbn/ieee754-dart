@@ -97,6 +97,12 @@ void main() {
       expect(parts.toFloat16Bytes(), [0x00, 0x01]);
     });
 
+    test('toFloat16Bytes(2 ** -25)', () {
+      var parts = FloatParts(1, -25);
+      expect(parts.isFloat16Lossless, false);
+      expect(parts.toFloat16Bytes(), [0x00, 0x01]);
+    });
+
     test('toFloat16Bytes(infinity)', () {
       var parts = FloatParts.infinity;
       expect(parts.isFloat16Lossless, true);

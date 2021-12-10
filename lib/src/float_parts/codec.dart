@@ -56,36 +56,31 @@ abstract class Codec {
   }
 
   bool isLossless(FloatParts float) {
-    if (float.isNaN || float.isInfinite) {
+    if (float.isNaN || float.isInfinite || float.mantissaInteger.isZero) {
       return true;
     }
 
-    final mantissa = float.mantissaInteger.abs();
-    int exponent = float.exponent + mantissaBitLength + exponentBias;
+    float = float.abs();
+    final exponent = float.exponent +
+        mantissaBitLength +
+        exponentBias +
+        (float.mantissa.bitLength - mantissaBitLength);
 
-    if (mantissa.bitLength == 0) {
-      return true;
-    }
-
-    if (mantissa.bitLength > mantissaBitLength) {
-      exponent -= mantissa.bitLength - mantissaBitLength;
-    } else if (mantissa.bitLength < mantissaBitLength) {
-      exponent += mantissaBitLength - mantissa.bitLength;
-    }
-
+    // Exponent too large
     if (exponent >= ((1 << exponentBitLength) - 1)) {
       return false;
     }
-
-    if (exponent > 0) {
+    // Normal
+    if (exponent >= 1) {
       return true;
     }
 
-    if (exponent < 1) {
-      return false;
-    } else {
-      return true;
-    }
+    final subnormalExp = -(exponentBias - 1 + mantissaBitLength);
+    final subnormalMantissaLength =
+        float.mantissaInteger.bitLength + float.exponent - subnormalExp;
+
+    return subnormalMantissaLength > 0 &&
+        subnormalMantissaLength <= mantissaBitLength;
   }
 
   Uint8List encode(FloatParts float, Endian e) {
@@ -124,7 +119,10 @@ abstract class Codec {
 
     final subnormal =
         float.roundToExponent(-(exponentBias - 1 + mantissaBitLength));
-    assert(subnormal.mantissaInteger.bitLength <= mantissaBitLength);
+    if (subnormal.mantissaInteger.bitLength > mantissaBitLength) {
+      return _encode(sign, Integer.zero, 0, e);
+    }
+
     return _encode(sign, subnormal.mantissaInteger, 0, e);
   }
 

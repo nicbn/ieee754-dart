@@ -445,5 +445,5 @@ class _Infinity extends FloatParts {
   @override
   final bool isNegative;
   @override
-  double toDouble() => double.nan;
+  double toDouble() => !isNegative ? double.infinity : double.negativeInfinity;
 }

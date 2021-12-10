@@ -64,7 +64,7 @@ abstract class Codec {
     final exponent = float.exponent +
         mantissaBitLength +
         exponentBias +
-        (float.mantissa.bitLength - mantissaBitLength);
+        (float.mantissa.bitLength - (mantissaBitLength + 1));
 
     // Exponent too large
     if (exponent >= ((1 << exponentBitLength) - 1)) {

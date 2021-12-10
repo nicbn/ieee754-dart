@@ -153,11 +153,11 @@ void main() {
     });
 
     test('fromFloat32Bytes(3.40282346639e+38)', () {
-      // 3.40282346639e+38 = 9007198717882551 * 2 ^ 75
+      // 3.40282346639e+38 = 16777215 * 2 ^ 104
       final input = [0x7f, 0x7f, 0xff, 0xff];
       var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.mantissa.toInt(), 9007198717882551);
-      expect(parts.exponent, 75);
+      expect(parts.mantissa.toInt(), 16777215);
+      expect(parts.exponent, 104);
       expect(parts.isNegative, false);
       expect(parts.isNaN, false);
       expect(parts.isInfinite, false);

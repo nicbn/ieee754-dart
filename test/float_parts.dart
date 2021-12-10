@@ -205,6 +205,7 @@ void main() {
 
     test('toFloat32Bytes(3.40282346639e+38)', () {
       var parts = FloatParts(9007198717882551, 75);
+      expect(parts.isFloat16Lossless, false);
       expect(parts.isFloat32Lossless, true);
       expect(parts.toFloat32Bytes(), [0x7f, 0x7f, 0xff, 0xff]);
     });

@@ -265,10 +265,16 @@ void main() {
       expect(parts.toDouble(), 1.375);
     });
 
-    test('toDouble(infinity)', () {
-      var parts = FloatParts.infinity;
-      expect(parts.isFloat32Lossless, true);
+    test('toDouble(2 ** 2048)', () {
+      var parts = FloatParts(1, 2048);
+      expect(parts.isFloat32Lossless, false);
       expect(parts.toDouble(), double.infinity);
+    });
+
+    test('toDouble(-2 ** 2048)', () {
+      var parts = FloatParts(-1, 2048);
+      expect(parts.isFloat32Lossless, false);
+      expect(parts.toDouble(), double.negativeInfinity);
     });
 
     test('toDouble(NaN)', () {

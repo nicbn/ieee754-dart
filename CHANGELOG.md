@@ -1,3 +1,7 @@
+## 1.0.2
+
+* Fixes false positives for `isLossless`.
+
 ## 1.0.1
 
 * Fixes encoding of `infinity` to `double` returning `nan`.

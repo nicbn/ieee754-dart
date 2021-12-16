@@ -60,7 +60,11 @@ abstract class Codec {
       return true;
     }
 
-    float = float.abs();
+    float = float.abs().minimize();
+    if (mantissaBitLength + 1 < float.mantissaInteger.bitLength) {
+      return false;
+    }
+
     final exponent = float.exponent +
         mantissaBitLength +
         exponentBias +

@@ -11,6 +11,14 @@ void main() {
       expect(parts.mantissa.toInt(), 5);
     });
 
+    test('isFloatLossless(4.1)', () {
+      var parts = FloatParts.fromDouble(4.1);
+      expect(parts.isFloat16Lossless, false);
+      expect(parts.isFloat32Lossless, false);
+      expect(parts.isFloat64Lossless, true);
+      expect(parts.isFloat128Lossless, true);
+    });
+
     // Float 16
 
     test('fromFloat16Bytes(0.0)', () {
@@ -210,7 +218,7 @@ void main() {
     });
 
     test('toFloat32Bytes(3.40282346639e+38)', () {
-      var parts = FloatParts(9007198717882551, 75);
+      var parts = FloatParts(16777215, 104);
       expect(parts.isFloat16Lossless, false);
       expect(parts.isFloat32Lossless, true);
       expect(parts.toFloat32Bytes(), [0x7f, 0x7f, 0xff, 0xff]);

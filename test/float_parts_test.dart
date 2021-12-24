@@ -1,348 +1,234 @@
 import 'dart:typed_data';
 
-import 'package:test/test.dart';
+import 'package:convert/convert.dart';
 import 'package:ieee754/ieee754.dart';
+import 'package:test/test.dart';
+
+class TestCase {
+  TestCase(
+    this.name, {
+    required this.parts,
+    this.isFloat16Lossless = false,
+    required String float16Bytes,
+    bool? isFloat32Lossless,
+    required String float32Bytes,
+    bool? isFloat64Lossless,
+    required String float64Bytes,
+    bool? isFloat128Lossless,
+    required String float128Bytes,
+  })  : float16Bytes = Uint8List.fromList(hex.decode(float16Bytes)),
+        float32Bytes = Uint8List.fromList(hex.decode(float32Bytes)),
+        float64Bytes = Uint8List.fromList(hex.decode(float64Bytes)),
+        float128Bytes = Uint8List.fromList(hex.decode(float128Bytes)),
+        isFloat32Lossless = isFloat32Lossless ?? isFloat16Lossless,
+        isFloat64Lossless =
+            isFloat64Lossless ?? isFloat32Lossless ?? isFloat16Lossless,
+        isFloat128Lossless = isFloat128Lossless ??
+            isFloat64Lossless ??
+            isFloat32Lossless ??
+            isFloat16Lossless;
+
+  final String name;
+  final FloatParts parts;
+  final bool isFloat16Lossless;
+  final Uint8List float16Bytes;
+  final bool isFloat32Lossless;
+  final Uint8List float32Bytes;
+  final bool isFloat64Lossless;
+  final Uint8List float64Bytes;
+  final bool isFloat128Lossless;
+  final Uint8List float128Bytes;
+}
 
 void main() {
+  final cases = [
+    TestCase(
+      '1.0',
+      parts: FloatParts(1, 0),
+      isFloat16Lossless: true,
+      float16Bytes: '3c00',
+      float32Bytes: '3f800000',
+      float64Bytes: '3ff0000000000000',
+      float128Bytes: '3fff0000000000000000000000000000',
+    ),
+    TestCase(
+      '-1.0',
+      parts: FloatParts(-1, 0),
+      isFloat16Lossless: true,
+      float16Bytes: 'bc00',
+      float32Bytes: 'bf800000',
+      float64Bytes: 'bff0000000000000',
+      float128Bytes: 'BFFF0000000000000000000000000000',
+    ),
+    TestCase(
+      '0.0',
+      parts: FloatParts(0, 0),
+      isFloat16Lossless: true,
+      float16Bytes: '0000',
+      float32Bytes: '00000000',
+      float64Bytes: '0000000000000000',
+      float128Bytes: '00000000000000000000000000000000',
+    ),
+    TestCase(
+      '-0.0',
+      parts: FloatParts(0, 0, forceNegative: true),
+      isFloat16Lossless: true,
+      float16Bytes: '8000',
+      float32Bytes: '80000000',
+      float64Bytes: '8000000000000000',
+      float128Bytes: '80000000000000000000000000000000',
+    ),
+    TestCase(
+      'infinite',
+      parts: FloatParts.infinity,
+      isFloat16Lossless: true,
+      float16Bytes: '7C00',
+      float32Bytes: '7F800000',
+      float64Bytes: '7FF0000000000000',
+      float128Bytes: '7FFF0000000000000000000000000000',
+    ),
+    TestCase(
+      '-infinite',
+      parts: FloatParts.negativeInfinity,
+      isFloat16Lossless: true,
+      float16Bytes: 'FC00',
+      float32Bytes: 'FF800000',
+      float64Bytes: 'FFF0000000000000',
+      float128Bytes: 'FFFF0000000000000000000000000000',
+    ),
+    TestCase(
+      'nan',
+      parts: FloatParts.nan,
+      isFloat16Lossless: true,
+      float16Bytes: '7FFF',
+      float32Bytes: '7FFFFFFF',
+      float64Bytes: '7FFFFFFFFFFFFFFF',
+      float128Bytes: '7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+    ),
+    TestCase(
+      '1.9990234375',
+      parts: FloatParts(2047, -10),
+      isFloat16Lossless: true,
+      float16Bytes: '3FFF',
+      float32Bytes: '3FFFE000',
+      float64Bytes: '3FFFFC0000000000',
+      float128Bytes: '3FFFFFC0000000000000000000000000',
+    ),
+    TestCase(
+      '1.99951171875',
+      parts: FloatParts(4095, -11),
+      isFloat32Lossless: true,
+      float16Bytes: '4000',
+      float32Bytes: '3FFFF000',
+      float64Bytes: '3FFFFE0000000000',
+      float128Bytes: '3FFFFFE0000000000000000000000000',
+    ),
+    TestCase(
+      '65504',
+      parts: FloatParts(2047, 5),
+      isFloat16Lossless: true,
+      float16Bytes: '7BFF',
+      float32Bytes: '477FE000',
+      float64Bytes: '40EFFC0000000000',
+      float128Bytes: '400EFFC0000000000000000000000000',
+    ),
+    TestCase(
+      '65505',
+      parts: FloatParts(65505, 0),
+      isFloat32Lossless: true,
+      float16Bytes: '7BFF',
+      float32Bytes: '477FE100',
+      float64Bytes: '40EFFC2000000000',
+      float128Bytes: '400EFFC2000000000000000000000000',
+    ),
+    TestCase(
+      'FLOAT32_MAX',
+      parts: FloatParts(16777215, 104),
+      isFloat32Lossless: true,
+      float16Bytes: '7C00',
+      float32Bytes: '7F7FFFFF',
+      float64Bytes: '47EFFFFFE0000000',
+      float128Bytes: '407EFFFFFE0000000000000000000000',
+    ),
+  ];
+
   group('FloatParts', () {
     test('minimize', () {
       var parts = FloatParts(10, 1).minimize();
       expect(parts.exponent, 2);
       expect(parts.mantissa.toInt(), 5);
     });
+  });
 
-    test('isFloatLossless(4.1)', () {
-      var parts = FloatParts.fromDouble(4.1);
-      expect(parts.isFloat16Lossless, false);
-      expect(parts.isFloat32Lossless, false);
-      expect(parts.isFloat64Lossless, true);
-      expect(parts.isFloat128Lossless, true);
-    });
+  group('FloatParts test suite', () {
+    for (final testCase in cases) {
+      test(testCase.name, () {
+        expect(testCase.parts.isFloat16Lossless, testCase.isFloat16Lossless);
+        expect(testCase.parts.isFloat32Lossless, testCase.isFloat32Lossless);
+        expect(testCase.parts.isFloat64Lossless, testCase.isFloat64Lossless);
+        expect(testCase.parts.isFloat128Lossless, testCase.isFloat128Lossless);
+        expect(testCase.parts.toFloat16Bytes(), testCase.float16Bytes);
+        expect(testCase.parts.toFloat32Bytes(), testCase.float32Bytes);
+        expect(testCase.parts.toFloat64Bytes(), testCase.float64Bytes);
+        expect(testCase.parts.toFloat128Bytes(), testCase.float128Bytes);
 
-    // Float 16
+        if (testCase.isFloat16Lossless) {
+          final parts = FloatParts.fromFloat16Bytes(testCase.float16Bytes);
 
-    test('fromFloat16Bytes(0.0)', () {
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0x00, 0x00]));
-      expect(parts.mantissa.toInt(), 0);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
+          if (testCase.parts.isInfinite) {
+            expect(parts.isInfinite, true);
+          } else if (testCase.parts.isNaN) {
+            expect(parts.isNaN, true);
+          } else {
+            expect(parts.mantissa, testCase.parts.mantissa);
+            if (testCase.parts.mantissa != BigInt.zero) {
+              expect(parts.exponent, testCase.parts.exponent);
+            }
+          }
+        }
+        if (testCase.isFloat32Lossless) {
+          final parts = FloatParts.fromFloat32Bytes(testCase.float32Bytes);
 
-    test('fromFloat16Bytes(-0.0)', () {
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0x80, 0x00]));
-      expect(parts.mantissa.toInt(), 0);
-      expect(parts.isNegative, true);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
+          if (testCase.parts.isInfinite) {
+            expect(parts.isInfinite, true);
+          } else if (testCase.parts.isNaN) {
+            expect(parts.isNaN, true);
+          } else {
+            expect(parts.mantissa, testCase.parts.mantissa);
+            if (testCase.parts.mantissa != BigInt.zero) {
+              expect(parts.exponent, testCase.parts.exponent);
+            }
+          }
+        }
+        if (testCase.isFloat64Lossless) {
+          final parts = FloatParts.fromFloat64Bytes(testCase.float64Bytes);
 
-    test('fromFloat16Bytes(1.375)', () {
-      // 1.375 = 11 * 2 ^ -3
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0x3D, 0x80]));
-      expect(parts.mantissa.toInt(), 11);
-      expect(parts.exponent, -3);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
+          if (testCase.parts.isInfinite) {
+            expect(parts.isInfinite, true);
+          } else if (testCase.parts.isNaN) {
+            expect(parts.isNaN, true);
+          } else {
+            expect(parts.mantissa, testCase.parts.mantissa);
+            if (testCase.parts.mantissa != BigInt.zero) {
+              expect(parts.exponent, testCase.parts.exponent);
+            }
+          }
+        }
+        if (testCase.isFloat128Lossless) {
+          final parts = FloatParts.fromFloat128Bytes(testCase.float128Bytes);
 
-    test('fromFloat16Bytes(65504)', () {
-      // 65504 = 2047 * 2 ^ 5
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0x7B, 0xFF]));
-      expect(parts.mantissa.toInt(), 2047);
-      expect(parts.exponent, 5);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('fromFloat16Bytes(infinity)', () {
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0x7C, 0x00]));
-      expect(parts.isNegative, false);
-      expect(parts.isInfinite, true);
-      expect(parts.isNaN, false);
-    });
-
-    test('fromFloat16Bytes(-infinity)', () {
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0xFC, 0x00]));
-      expect(parts.isNegative, true);
-      expect(parts.isInfinite, true);
-      expect(parts.isNaN, false);
-    });
-
-    test('fromFloat16Bytes(NaN)', () {
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0x7e, 0x00]));
-      expect(parts.isNaN, true);
-    });
-
-    test('fromFloat16Bytes(-NaN)', () {
-      var parts = FloatParts.fromFloat16Bytes(Uint8List.fromList([0xfe, 0x00]));
-      expect(parts.isNaN, true);
-    });
-
-    test('toFloat16Bytes(0.0)', () {
-      var parts = FloatParts(0, 0);
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0x00, 0x00]);
-    });
-
-    test('toFloat16Bytes(-0.0)', () {
-      var parts = FloatParts(0, 0, forceNegative: true);
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0x80, 0x00]);
-    });
-
-    test('toFloat16Bytes(65504)', () {
-      var parts = FloatParts(2047, 5);
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0x7B, 0xFF]);
-    });
-
-    test('toFloat16Bytes(2 ** -24)', () {
-      var parts = FloatParts(1, -24);
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0x00, 0x01]);
-    });
-
-    test('toFloat16Bytes(2 ** -25)', () {
-      var parts = FloatParts(1, -25);
-      expect(parts.isFloat16Lossless, false);
-      expect(parts.toFloat16Bytes(), [0x00, 0x01]);
-    });
-
-    test('toFloat16Bytes(infinity)', () {
-      var parts = FloatParts.infinity;
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0x7C, 0x00]);
-    });
-
-    test('toFloat16Bytes(-infinity)', () {
-      var parts = FloatParts.negativeInfinity;
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0xFC, 0x00]);
-    });
-
-    test('toFloat16Bytes(NaN)', () {
-      var parts = FloatParts.nan;
-      expect(parts.isFloat16Lossless, true);
-      expect(parts.toFloat16Bytes(), [0x7e, 0x00]);
-    });
-
-    // 32
-
-    test('fromFloat32Bytes(0.0)', () {
-      final input = [0x00, 0x00, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.mantissa.toInt(), 0);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('fromFloat32Bytes(-0.0)', () {
-      final input = [0x80, 0x00, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.mantissa.toInt(), 0);
-      expect(parts.isNegative, true);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('fromFloat32Bytes(1.375)', () {
-      // 1.375 = 11 * 2 ^ -3
-      final input = [0x3f, 0xb0, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.mantissa.toInt(), 11);
-      expect(parts.exponent, -3);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('fromFloat32Bytes(3.40282346639e+38)', () {
-      // 3.40282346639e+38 = 16777215 * 2 ^ 104
-      final input = [0x7f, 0x7f, 0xff, 0xff];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.mantissa.toInt(), 16777215);
-      expect(parts.exponent, 104);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('fromFloat32Bytes(infinity)', () {
-      final input = [0x7f, 0x80, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.isNegative, false);
-      expect(parts.isInfinite, true);
-      expect(parts.isNaN, false);
-    });
-
-    test('fromFloat32Bytes(-infinity)', () {
-      final input = [0xff, 0x80, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.isNegative, true);
-      expect(parts.isInfinite, true);
-      expect(parts.isNaN, false);
-    });
-
-    test('fromFloat32Bytes(NaN)', () {
-      final input = [0x7f, 0xc0, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.isNaN, true);
-    });
-
-    test('fromFloat32Bytes(-NaN)', () {
-      final input = [0xff, 0xc0, 0x00, 0x00];
-      var parts = FloatParts.fromFloat32Bytes(Uint8List.fromList(input));
-      expect(parts.isNaN, true);
-    });
-
-    test('toFloat32Bytes(0.0)', () {
-      var parts = FloatParts(0, 0);
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0x00, 0x00, 0x00, 0x00]);
-    });
-
-    test('toFloat32Bytes(-0.0)', () {
-      var parts = FloatParts(0, 0, forceNegative: true);
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0x80, 0x00, 0x00, 0x00]);
-    });
-
-    test('toFloat32Bytes(1.375)', () {
-      var parts = FloatParts(11, -3);
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0x3f, 0xb0, 0x00, 0x00]);
-    });
-
-    test('toFloat32Bytes(3.40282346639e+38)', () {
-      var parts = FloatParts(16777215, 104);
-      expect(parts.isFloat16Lossless, false);
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0x7f, 0x7f, 0xff, 0xff]);
-    });
-
-    test('toFloat32Bytes(infinity)', () {
-      var parts = FloatParts.infinity;
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0x7f, 0x80, 0x00, 0x00]);
-    });
-
-    test('toFloat32Bytes(-infinity)', () {
-      var parts = FloatParts.negativeInfinity;
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0xff, 0x80, 0x00, 0x00]);
-    });
-
-    test('toFloat32Bytes(NaN)', () {
-      var parts = FloatParts.nan;
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toFloat32Bytes(), [0x7f, 0xc0, 0x00, 0x00]);
-    });
-
-    // 64
-
-    test('fromDouble(1.375)', () {
-      // 1.375 = 11 * 2 ^ -3
-
-      var parts = FloatParts.fromDouble(1.375);
-      expect(parts.mantissa.toInt(), 11);
-      expect(parts.exponent, -3);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('fromDouble(infinity)', () {
-      var parts = FloatParts.fromDouble(double.infinity);
-      expect(parts.isNegative, false);
-      expect(parts.isInfinite, true);
-      expect(parts.isNaN, false);
-    });
-
-    test('fromDouble(NaN)', () {
-      var parts = FloatParts.fromDouble(double.nan);
-      expect(parts.isNaN, true);
-    });
-
-    test('toDouble(1.375)', () {
-      var parts = FloatParts(11, -3);
-      expect(parts.isFloat64Lossless, true);
-      expect(parts.toDouble(), 1.375);
-    });
-
-    test('toDouble(2 ** 2048)', () {
-      var parts = FloatParts(1, 2048);
-      expect(parts.isFloat32Lossless, false);
-      expect(parts.toDouble(), double.infinity);
-    });
-
-    test('toDouble(-2 ** 2048)', () {
-      var parts = FloatParts(-1, 2048);
-      expect(parts.isFloat32Lossless, false);
-      expect(parts.toDouble(), double.negativeInfinity);
-    });
-
-    test('toDouble(NaN)', () {
-      var parts = FloatParts.nan;
-      expect(parts.isFloat32Lossless, true);
-      expect(parts.toDouble().isNaN, true);
-    });
-
-    // 128
-
-    test('fromFloat128Bytes(1.375)', () {
-      // 1.375 = 11 * 2 ^ -3
-
-      final input = [
-        0x3f,
-        0xff,
-        0x60,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00
-      ];
-      var parts = FloatParts.fromFloat128Bytes(Uint8List.fromList(input));
-      expect(parts.mantissa.toInt(), 11);
-      expect(parts.exponent, -3);
-      expect(parts.isNegative, false);
-      expect(parts.isNaN, false);
-      expect(parts.isInfinite, false);
-    });
-
-    test('toFloat128Bytes(1.375)', () {
-      var parts = FloatParts(11, -3);
-      expect(parts.isFloat128Lossless, true);
-      expect(parts.toFloat128Bytes(), [
-        0x3f,
-        0xff,
-        0x60,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00
-      ]);
-    });
+          if (testCase.parts.isInfinite) {
+            expect(parts.isInfinite, true);
+          } else if (testCase.parts.isNaN) {
+            expect(parts.isNaN, true);
+          } else {
+            expect(parts.mantissa, testCase.parts.mantissa);
+            if (testCase.parts.mantissa != BigInt.zero) {
+              expect(parts.exponent, testCase.parts.exponent);
+            }
+          }
+        }
+      });
+    }
   });
 }

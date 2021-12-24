@@ -1,3 +1,7 @@
+## 1.0.3
+
+* NaN mantissa is now one filled.
+
 ## 1.0.2
 
 * Fixes false positives for `isLossless`.

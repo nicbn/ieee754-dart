@@ -13,6 +13,14 @@ abstract class Integer {
 
   factory Integer.from(int x) => _IntInteger(x);
 
+  factory Integer.allOnes(int b) {
+    if (b < 51) {
+      return _IntInteger((1 << (b + 1)) - 1);
+    } else {
+      return _BigIntInteger(~(~BigInt.zero << (b + 1)));
+    }
+  }
+
   static final Integer zero = _IntInteger(0);
 
   static final Integer one = _IntInteger(1);

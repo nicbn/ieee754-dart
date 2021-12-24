@@ -91,10 +91,11 @@ abstract class Codec {
     // Special
     if (float.isNaN) {
       return _encode(
-          float.isNegative,
-          Integer.zero.withBit(mantissaBitLength - 1),
-          (1 << exponentBitLength) - 1,
-          e);
+        float.isNegative,
+        Integer.allOnes(mantissaBitLength - 1),
+        (1 << exponentBitLength) - 1,
+        e,
+      );
     }
 
     if (float.isInfinite) {
